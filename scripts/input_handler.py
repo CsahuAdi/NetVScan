@@ -8,23 +8,20 @@ def clean_input(target: str) -> str:
     """
     target = target.strip().lower()
     target = re.sub(r'^https?://', '', target)
-    # remove any trailing slash (e.g., www.example.com/)
-    target = target
+    target = target.rstrip('/')
     return target
 
 def resolve_hostname(hostname: str) -> str:
     """
     Resolve a hostname to its IPv4 address.
-    Returns the IP address as a string.
-    If already an IP, returns it unchanged.
+    If already an IP, returns as is.
     """
     hostname = clean_input(hostname)
     try:
-        # If it’s already a valid IP, return as is
         ipaddress.ip_address(hostname)
         return hostname
     except ValueError:
-        pass  # Not an IP, so try DNS
+        pass  # Not a direct IP — try DNS
 
     try:
         ip = socket.gethostbyname(hostname)
@@ -34,27 +31,51 @@ def resolve_hostname(hostname: str) -> str:
         print(f"Unable to resolve hostname: {hostname}")
         return None
 
-
-def get_target_ip() -> str:
+def validate_cidr(cidr: str) -> str:
     """
-    Prompt user for a target (IP or hostname).
-    Validate and resolve to an IP if needed.
-    Returns a valid IP or None if invalid.
+    Validate that a string is a proper CIDR.
+    If valid, returns it as is.
+    """
+    try:
+        ipaddress.ip_network(cidr, strict=False)
+        return cidr
+    except ValueError:
+        print(f"Invalid CIDR: {cidr}")
+        return None
+
+def get_target() -> str:
+    """
+    Prompt user for a target (single host or CIDR).
+    Detects and validates the input accordingly.
+    Returns the target string (IP or CIDR).
     """
     while True:
-        target = input("Enter target IP address or hostname/URL: ").strip()
-        resolved_ip = resolve_hostname(target)
-        if resolved_ip:
-            print(f"Target resolved and validated: {resolved_ip}")
-            return resolved_ip
-        else:
-            print("Invalid or unresolvable target. Please try again.")
+        target = input("Enter target (IP/hostname or CIDR): ").strip()
+        if not target:
+            print("Please enter a target.")
+            continue
 
+        if '/' in target:
+            # CIDR
+            cidr = validate_cidr(target)
+            if cidr:
+                print(f"Valid CIDR: {cidr}")
+                return cidr
+            else:
+                print("Invalid CIDR. Please try again.")
+        else:
+            # Single host
+            resolved_ip = resolve_hostname(target)
+            if resolved_ip:
+                print(f"Target resolved and validated: {resolved_ip}")
+                return resolved_ip
+            else:
+                print("Invalid or unresolvable target. Please try again.")
 
 def get_port_range():
     """
     Prompt the user for port range.
-    Defaults to common ports if Enter is pressed.
+    Defaults to 1-1024 if Enter is pressed.
     """
     default_ports = list(range(1, 1025))
     user_input = input("Enter port range (e.g., 20-80) or press Enter for default (1-1024): ").strip()
@@ -74,9 +95,8 @@ def get_port_range():
         print("Invalid range. Falling back to default: 1-1024")
         return default_ports
 
-
 if __name__ == "__main__":
     # Standalone test
-    target = get_target_ip()
+    target = get_target()
     ports = get_port_range()
     print(f"\nFinal Input: Target = {target}, Ports = {ports[:10]}{'...' if len(ports) > 10 else ''}")

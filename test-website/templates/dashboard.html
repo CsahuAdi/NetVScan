@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Service Control Dashboard</title>
+</head>
+<body>
+<h1>🛠️ Service Control Dashboard</h1>
+
+<h2>SSH Service (sshd) — Status: {{ ssh_status }}</h2>
+{% if ssh_status == 'Running' %}
+<a href="/stop/ssh">Stop SSH</a>
+{% else %}
+<a href="/start/ssh">Start SSH</a>
+{% endif %}
+
+<h2>FTP Service (FileZilla) — Status: {{ ftp_status }}</h2>
+{% if ftp_status == 'Running' %}
+<a href="/stop/ftp">Stop FTP</a>
+{% else %}
+<a href="/start/ftp">Start FTP</a>
+{% endif %}
+</body>
+</html>
